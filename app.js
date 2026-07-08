@@ -777,6 +777,50 @@ function buildFooter() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// ANÚNCIOS (Adsterra)
+// ═══════════════════════════════════════════════════════════════
+//
+// COMO USAR:
+// 1. Crie conta em adsterra.com e adicione seu site.
+// 2. Crie um "Banner" (ex: 728x90 para topo/rodapé, 300x250 para o meio).
+// 3. A Adsterra te dá um código. Cole esse código dentro das aspas
+//    da variável correspondente abaixo (ADS.topo, ADS.meio, ADS.rodape).
+// 4. Salve e publique. O anúncio aparece sozinho.
+//
+// Enquanto estiver vazio, aparece um espaço discreto "Publicidade"
+// que NÃO atrapalha o site.
+
+const ADS = {
+  // Banner do TOPO (recomendado: 728x90). Cole o código da Adsterra aqui:
+  topo: ``,
+
+  // Banner do MEIO, entre os filmes (recomendado: 300x250). Cole aqui:
+  meio: ``,
+
+  // Banner do RODAPÉ (recomendado: 728x90). Cole aqui:
+  rodape: ``,
+};
+
+function buildAdSlot(code, id) {
+  const wrap = el('div', { className: 'ad-slot', id: 'ad-' + id });
+  if (code && code.trim()) {
+    // Injeta o código do anúncio e executa scripts (Adsterra usa <script>)
+    wrap.innerHTML = code;
+    wrap.querySelectorAll('script').forEach(old => {
+      const s = document.createElement('script');
+      [...old.attributes].forEach(a => s.setAttribute(a.name, a.value));
+      s.textContent = old.textContent;
+      old.replaceWith(s);
+    });
+  } else {
+    // Placeholder discreto enquanto não há código
+    wrap.classList.add('ad-empty');
+    wrap.appendChild(el('span', { text: 'Publicidade' }));
+  }
+  return wrap;
+}
+
 // INIT
 // ═══════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
@@ -785,10 +829,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   root.appendChild(buildTopbar());
   root.appendChild(buildHero());
+  root.appendChild(buildAdSlot(ADS.topo, 'topo'));      // anúncio TOPO
   root.appendChild(buildStats());
   root.appendChild(buildFilters());
   root.appendChild(buildCatalog());
+  root.appendChild(buildAdSlot(ADS.meio, 'meio'));      // anúncio MEIO
   root.appendChild(buildAdminPanel());
+  root.appendChild(buildAdSlot(ADS.rodape, 'rodape'));  // anúncio RODAPÉ
   root.appendChild(buildFooter());
   root.appendChild(buildPlayerModal());
   root.appendChild(buildLoginModal());

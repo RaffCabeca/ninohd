@@ -536,3 +536,24 @@ img { display: block; max-width: 100%; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   ANÚNCIOS
+   ══════════════════════════════════════════════════════════════ */
+.ad-slot {
+  display: flex; align-items: center; justify-content: center;
+  margin: 8px auto; padding: 0 20px; max-width: 1100px;
+  min-height: 60px; overflow: hidden;
+}
+.ad-slot.ad-empty {
+  min-height: 90px; border: 1px dashed var(--line-2); border-radius: var(--radius);
+  background: var(--panel);
+}
+.ad-slot.ad-empty span {
+  font-size: .7rem; color: var(--text-3); text-transform: uppercase; letter-spacing: .1em;
+}
+.ad-slot iframe, .ad-slot ins, .ad-slot img { max-width: 100%; }
+@media (max-width: 720px) {
+  .ad-slot { padding: 0 12px; }
+  .ad-slot.ad-empty { min-height: 60px; }
+}
