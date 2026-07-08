@@ -28,7 +28,7 @@ from fastapi.middleware.cors import CORSMiddleware
 DB_PATH = os.environ.get("NINOHD_DB", "ninohd.db")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "ninohd2026")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
+ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-3-5-sonnet-latest")
 PORT = int(os.environ.get("PORT", 8000))
 
 # Token de sessão do admin (gerado a cada inicialização do servidor)
@@ -136,6 +136,7 @@ HTML_SHELL = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>NinoHD — Filmes</title>
 <meta name="description" content="NinoHD: filmes em alta, por gênero e para toda a família. Assista de tudo.">
+<link rel="icon" type="image/svg+xml" href="/static/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -297,7 +298,6 @@ async def chat(request: Request):
         "model": ANTHROPIC_MODEL,
         "max_tokens": 2048,
         "system": CHAT_SYSTEM,
-        "tools": [{"type": "web_search_20250305", "name": "web_search", "max_uses": 3}],
         "messages": messages,
     }
     headers = {
@@ -306,11 +306,30 @@ async def chat(request: Request):
         "content-type": "application/json",
     }
 
-    async with httpx.AsyncClient(timeout=httpx.Timeout(90.0, connect=15.0)) as client:
-        resp = await client.post("https://api.anthropic.com/v1/messages", headers=headers, json=payload)
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(90.0, connect=15.0)) as client:
+            resp = await client.post("https://api.anthropic.com/v1/messages", headers=headers, json=payload)
+    except Exception as e:
+        return JSONResponse({"reply": f"Não consegui falar com o assistente agora: {e}"}, status_code=200)
 
     if resp.status_code != 200:
-        return JSONResponse({"reply": f"Erro na conexão com o assistente ({resp.status_code}). Tente de novo."}, status_code=200)
+        # Mostra o motivo real do erro para facilitar o diagnóstico
+        try:
+            err = resp.json().get("error", {})
+            msg = err.get("message", resp.text[:200])
+        except Exception:
+            msg = resp.text[:200]
+        detail = {
+            400: "pedido inválido (verifique o nome do modelo)",
+            401: "chave de API inválida",
+            403: "sem permissão (verifique se a chave tem acesso ao modelo)",
+            429: "muitas requisições, espere um pouco",
+            529: "serviço sobrecarregado, tente de novo",
+        }.get(resp.status_code, "")
+        return JSONResponse(
+            {"reply": f"O assistente NINO está indisponível ({resp.status_code}{' - ' + detail if detail else ''}). {msg}"},
+            status_code=200,
+        )
 
     data = resp.json()
     text = "\n".join(b["text"] for b in data.get("content", []) if b.get("type") == "text")
