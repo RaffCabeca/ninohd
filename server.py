@@ -134,8 +134,19 @@ HTML_SHELL = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>NinoHD — Filmes</title>
-<meta name="description" content="NinoHD: filmes em alta, por gênero e para toda a família. Assista de tudo.">
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- VERIFICAÇÃO DO GOOGLE SEARCH CONSOLE                          -->
+<!-- Troque a linha abaixo pela metatag que o Google te deu:       -->
+GOOGLE_VERIFICATION_TAG
+<!-- ════════════════════════════════════════════════════════════ -->
+
+<title>NinoHD — Assistir Filmes Online Grátis Dublado e Legendado</title>
+<meta name="description" content="Assista filmes online grátis no NinoHD: ação, terror, comédia, aventura, infantil e clássicos dublados. Filmes completos em português para toda a família.">
+<meta name="keywords" content="filmes online, assistir filmes grátis, filmes completos dublado, filmes online grátis, filmes de ação, filmes de terror, filmes de aventura, filmes infantis, clássicos dublados, filme completo português">
+<meta property="og:title" content="NinoHD — Assistir Filmes Online Grátis">
+<meta property="og:description" content="Filmes completos dublados e legendados, de graça. Ação, terror, comédia, aventura e clássicos para toda a família.">
+<meta property="og:type" content="website">
 <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -155,7 +166,15 @@ HTML_SHELL = """<!DOCTYPE html>
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
-    return HTML_SHELL
+    # Insere a metatag de verificação do Google (vinda da variável de ambiente)
+    google_tag = os.environ.get("GOOGLE_VERIFICATION", "")
+    return HTML_SHELL.replace("GOOGLE_VERIFICATION_TAG", google_tag)
+
+
+@app.get("/google7ae595c673b3fc89.html", response_class=HTMLResponse)
+async def google_verify():
+    """Arquivo de verificação do Google Search Console."""
+    return "google-site-verification: google7ae595c673b3fc89.html"
 
 
 @app.get("/api/health")
