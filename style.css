@@ -557,3 +557,82 @@ img { display: block; max-width: 100%; }
   .ad-slot { padding: 0 12px; }
   .ad-slot.ad-empty { min-height: 60px; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   CARROSSEL DE DESTAQUES (banner girando)
+   ══════════════════════════════════════════════════════════════ */
+.showcase {
+  position: relative; max-width: 1100px; margin: 24px auto 0; padding: 0 20px;
+}
+.showcase-track {
+  position: relative; border-radius: var(--radius); overflow: hidden;
+  height: 340px; background: var(--panel);
+  box-shadow: var(--shadow), 0 0 40px var(--glow-v);
+}
+.showcase-slide {
+  position: absolute; inset: 0; opacity: 0; transition: opacity 1s ease;
+  display: flex; align-items: flex-end;
+}
+.showcase-slide.active { opacity: 1; }
+.showcase-slide img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  transform: scale(1.05); animation: slow-zoom 8s ease-in-out infinite alternate;
+}
+@keyframes slow-zoom { from { transform: scale(1.02); } to { transform: scale(1.12); } }
+.showcase-slide::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(7,7,15,0.92) 0%, rgba(7,7,15,0.55) 45%, transparent 100%),
+              linear-gradient(0deg, rgba(7,7,15,0.9), transparent 50%);
+}
+.showcase-info { position: relative; z-index: 2; padding: 32px 36px; max-width: 60%; }
+.showcase-tag {
+  display: inline-block; padding: 4px 12px; border-radius: 40px; margin-bottom: 12px;
+  background: var(--amber); color: #1a1200; font-size: .68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.showcase-title {
+  font-family: 'Bebas Neue', sans-serif; font-size: clamp(2rem, 5vw, 3.4rem);
+  line-height: .95; margin-bottom: 10px; color: #fff; text-shadow: 0 2px 20px rgba(0,0,0,0.6);
+}
+.showcase-meta { display: flex; gap: 12px; font-size: .82rem; color: var(--text-2); margin-bottom: 14px; flex-wrap: wrap; }
+.showcase-meta .rating { color: var(--amber); font-weight: 600; }
+.showcase-play {
+  display: inline-flex; align-items: center; gap: 9px; padding: 12px 26px; border-radius: 40px;
+  background: var(--violet); color: #fff; font-weight: 600; font-size: .9rem;
+  box-shadow: 0 0 22px var(--glow-v); transition: transform .25s;
+}
+.showcase-play:hover { transform: scale(1.05); }
+.showcase-play svg { width: 17px; height: 17px; fill: #fff; }
+.showcase-dots { display: flex; gap: 8px; justify-content: center; margin-top: 16px; }
+.showcase-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--line-2); cursor: pointer; transition: all .3s; }
+.showcase-dot.active { background: var(--violet); width: 26px; border-radius: 5px; }
+
+/* ══════════════════════════════════════════════════════════════
+   ANIMAÇÕES EXTRAS
+   ══════════════════════════════════════════════════════════════ */
+/* entrada dos cards em cascata */
+.film-card { animation: card-pop .5s ease both; }
+@keyframes card-pop { from { opacity: 0; transform: translateY(24px) scale(.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+/* brilho pulsante nos badges em alta */
+.badge-trending { animation: badge-glow 2s ease-in-out infinite; }
+@keyframes badge-glow { 0%,100% { box-shadow: 0 0 0 rgba(251,191,36,0); } 50% { box-shadow: 0 0 14px rgba(251,191,36,0.7); } }
+
+/* seção com título deslizando */
+.section-title { position: relative; }
+.section-title .dot { animation: dot-pulse 1.8s ease-in-out infinite; }
+@keyframes dot-pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: .6; } }
+
+/* filtros com brilho ao ativar */
+.filter-chip.active { animation: chip-in .3s ease; }
+@keyframes chip-in { from { transform: scale(.9); } to { transform: scale(1); } }
+
+/* estrelas decorativas no fundo do hero */
+.hero-stars { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+.hero-star { position: absolute; width: 2px; height: 2px; background: #fff; border-radius: 50%; opacity: .5; animation: twinkle 3s ease-in-out infinite; }
+@keyframes twinkle { 0%,100% { opacity: .2; transform: scale(1); } 50% { opacity: .9; transform: scale(1.6); } }
+
+@media (max-width: 720px) {
+  .showcase-track { height: 260px; }
+  .showcase-info { max-width: 85%; padding: 20px; }
+}

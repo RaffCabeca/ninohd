@@ -99,6 +99,7 @@ async function loadFilms() {
     S.films = data.films || [];
   } catch (e) { S.films = []; }
   renderFilms();
+  renderShowcase();
 }
 
 // ─── SECURITY (leve) ──────────────────────────────────────────
@@ -165,6 +166,18 @@ function buildHero() {
   hero.appendChild(el('div', { className: 'hero-beam' }));
   hero.appendChild(el('div', { className: 'hero-grain' }));
 
+  // estrelas decorativas animadas
+  const stars = el('div', { className: 'hero-stars' });
+  for (let i = 0; i < 40; i++) {
+    const star = el('div', { className: 'hero-star' });
+    star.style.left = Math.random() * 100 + '%';
+    star.style.top = Math.random() * 100 + '%';
+    star.style.animationDelay = (Math.random() * 3) + 's';
+    star.style.width = star.style.height = (Math.random() * 2 + 1) + 'px';
+    stars.appendChild(star);
+  }
+  hero.appendChild(stars);
+
   const content = el('div', { className: 'hero-content' });
   content.appendChild(el('div', { className: 'hero-eyebrow', text: 'Seu cinema, sem limites' }));
   content.appendChild(el('h1', { className: 'hero-title', html: 'ASSISTA<br>DE <em>TUDO</em>' }));
@@ -180,6 +193,68 @@ function buildHero() {
 
   hero.appendChild(content);
   return hero;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BUILD — CARROSSEL DE DESTAQUES
+// ═══════════════════════════════════════════════════════════════
+function buildShowcase() {
+  const section = el('div', { className: 'showcase', id: 'showcase' });
+  section.style.display = 'none'; // aparece só quando tiver filmes
+  const track = el('div', { className: 'showcase-track', id: 'showcase-track' });
+  section.appendChild(track);
+  section.appendChild(el('div', { className: 'showcase-dots', id: 'showcase-dots' }));
+  return section;
+}
+
+let showcaseTimer = null;
+let showcaseIndex = 0;
+function renderShowcase() {
+  const section = document.getElementById('showcase');
+  const track = document.getElementById('showcase-track');
+  const dots = document.getElementById('showcase-dots');
+  if (!section || !track) return;
+
+  // pega até 5 filmes em destaque (em alta), ou os que têm capa
+  let feats = S.films.filter(f => f.trending && f.poster);
+  if (feats.length < 1) feats = S.films.filter(f => f.poster).slice(0, 5);
+  feats = feats.slice(0, 5);
+
+  if (!feats.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  track.innerHTML = ''; dots.innerHTML = '';
+  showcaseIndex = 0;
+
+  feats.forEach((f, i) => {
+    const slide = el('div', { className: 'showcase-slide' + (i === 0 ? ' active' : ''), 'data-i': i });
+    slide.appendChild(el('img', { src: f.poster, alt: f.title || '' }));
+    const info = el('div', { className: 'showcase-info' });
+    info.appendChild(el('div', { className: 'showcase-tag', text: f.trending ? 'Em alta' : 'Destaque' }));
+    info.appendChild(el('div', { className: 'showcase-title', text: f.title || 'Filme' }));
+    const meta = el('div', { className: 'showcase-meta' });
+    [f.year, f.genre, f.duration].filter(Boolean).forEach(x => meta.appendChild(el('span', { text: x })));
+    if (f.rating) meta.appendChild(el('span', { className: 'rating', text: '★ ' + f.rating }));
+    info.appendChild(meta);
+    const play = el('button', { className: 'showcase-play', onClick: () => openPlayer(f) });
+    play.appendChild(svgEl(I.play)); play.appendChild(document.createTextNode('Assistir'));
+    info.appendChild(play);
+    slide.appendChild(info);
+    track.appendChild(slide);
+
+    const dot = el('div', { className: 'showcase-dot' + (i === 0 ? ' active' : ''), 'data-i': i,
+      onClick: () => showSlide(i) });
+    dots.appendChild(dot);
+  });
+
+  if (showcaseTimer) clearInterval(showcaseTimer);
+  if (feats.length > 1) {
+    showcaseTimer = setInterval(() => showSlide((showcaseIndex + 1) % feats.length), 5000);
+  }
+}
+function showSlide(i) {
+  showcaseIndex = i;
+  document.querySelectorAll('.showcase-slide').forEach(s => s.classList.toggle('active', +s.getAttribute('data-i') === i));
+  document.querySelectorAll('.showcase-dot').forEach(d => d.classList.toggle('active', +d.getAttribute('data-i') === i));
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -792,29 +867,51 @@ function buildFooter() {
 // que NÃO atrapalha o site.
 
 const ADS = {
-  // Banner do TOPO (recomendado: 728x90). Cole o código da Adsterra aqui:
-  topo: ``,
+  // Banner do TOPO (320x50 Adsterra):
+  topo: { key: '7b207cca1baff351b2c5c65ad61f271d', width: 320, height: 50 },
 
-  // Banner do MEIO, entre os filmes (recomendado: 300x250). Cole aqui:
-  meio: ``,
+  // Banner do MEIO, entre os filmes (160x600 Adsterra):
+  meio: { key: 'cf2e2cd29abbf01df0d12c2e8df01cd5', width: 160, height: 600 },
 
-  // Banner do RODAPÉ (recomendado: 728x90). Cole aqui:
-  rodape: ``,
+  // Banner do RODAPÉ (320x50 Adsterra):
+  rodape: { key: '7b207cca1baff351b2c5c65ad61f271d', width: 320, height: 50 },
 };
 
-function buildAdSlot(code, id) {
+function buildAdSlot(cfg, id) {
   const wrap = el('div', { className: 'ad-slot', id: 'ad-' + id });
-  if (code && code.trim()) {
-    // Injeta o código do anúncio e executa scripts (Adsterra usa <script>)
-    wrap.innerHTML = code;
-    wrap.querySelectorAll('script').forEach(old => {
-      const s = document.createElement('script');
-      [...old.attributes].forEach(a => s.setAttribute(a.name, a.value));
-      s.textContent = old.textContent;
-      old.replaceWith(s);
+
+  if (cfg && cfg.key) {
+    // Cada anúncio roda dentro de um iframe isolado, pra vários na mesma
+    // página não se sobrescreverem (o atOptions da Adsterra é global).
+    const frame = el('iframe', {
+      width: cfg.width,
+      height: cfg.height,
+      scrolling: 'no',
+      frameborder: '0',
+      marginheight: '0',
+      marginwidth: '0',
+      style: `width:${cfg.width}px;height:${cfg.height}px;border:0;overflow:hidden`,
     });
+    wrap.appendChild(frame);
+    // Escreve o código do anúncio dentro do iframe depois de anexado
+    setTimeout(() => {
+      try {
+        const doc = frame.contentWindow.document;
+        doc.open();
+        doc.write(
+          '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+          '<style>body{margin:0;padding:0;overflow:hidden}</style></head><body>' +
+          "<script type=\"text/javascript\">atOptions={'key':'" + cfg.key +
+          "','format':'iframe','height':" + cfg.height + ",'width':" + cfg.width +
+          ",'params':{}};<\/script>" +
+          '<script type="text/javascript" src="https://www.highperformanceformat.com/' +
+          cfg.key + '/invoke.js"><\/script>' +
+          '</body></html>'
+        );
+        doc.close();
+      } catch (e) { /* ignora */ }
+    }, 60);
   } else {
-    // Placeholder discreto enquanto não há código
     wrap.classList.add('ad-empty');
     wrap.appendChild(el('span', { text: 'Publicidade' }));
   }
@@ -829,6 +926,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   root.appendChild(buildTopbar());
   root.appendChild(buildHero());
+  root.appendChild(buildShowcase());
   root.appendChild(buildAdSlot(ADS.topo, 'topo'));      // anúncio TOPO
   root.appendChild(buildStats());
   root.appendChild(buildFilters());
