@@ -742,10 +742,10 @@ img { display: block; max-width: 100%; }
    CURSOR DE PIPOCA (cinema)
    ══════════════════════════════════════════════════════════════ */
 body {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='40' viewBox='0 0 36 40'%3E%3C!-- balde --%3E%3Cpath d='M8 14 h20 l-2 24 a2 2 0 0 1-2 2 h-12 a2 2 0 0 1-2-2 z' fill='%23E23744'/%3E%3Cpath d='M8 14 h20 l-2 24 a2 2 0 0 1-2 2 h-12 a2 2 0 0 1-2-2 z' fill='none' stroke='%23fff' stroke-width='0'/%3E%3C!-- listras brancas --%3E%3Crect x='12' y='14' width='3' height='26' fill='%23fff' opacity='.9'/%3E%3Crect x='19' y='14' width='3' height='26' fill='%23fff' opacity='.9'/%3E%3C!-- pipocas --%3E%3Ccircle cx='11' cy='11' r='4' fill='%23FBE8B0'/%3E%3Ccircle cx='18' cy='8' r='4.5' fill='%23FCEFC0'/%3E%3Ccircle cx='25' cy='11' r='4' fill='%23FBE8B0'/%3E%3Ccircle cx='14' cy='13' r='3.5' fill='%23FCEFC0'/%3E%3Ccircle cx='22' cy='13' r='3.5' fill='%23FBE8B0'/%3E%3C/svg%3E") 4 4, auto;
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='10' cy='9' r='4' fill='%23FCEFC0'/%3E%3Ccircle cx='16' cy='6' r='4.5' fill='%23FBE8B0'/%3E%3Ccircle cx='22' cy='9' r='4' fill='%23FCEFC0'/%3E%3Cpath d='M7 12 h18 l-2 17 a2 2 0 0 1-2 2 h-10 a2 2 0 0 1-2-2 z' fill='%23E23744'/%3E%3Crect x='11' y='12' width='2.5' height='19' fill='%23fff'/%3E%3Crect x='18' y='12' width='2.5' height='19' fill='%23fff'/%3E%3C/svg%3E") 16 16, auto;
 }
-/* nos botões e links, cursor de "mãozinha" com pipoca menor */
+/* nos botões e links, cursor de pipoca roxa */
 a, button, .film-card, .filter-chip, .cf-item, .nav-item, .chat-fab,
-.showcase-play, .cf-play-center, .hero-cta, input[type=submit] {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='34' viewBox='0 0 36 40'%3E%3Cpath d='M8 14 h20 l-2 24 a2 2 0 0 1-2 2 h-12 a2 2 0 0 1-2-2 z' fill='%238B5CF6'/%3E%3Crect x='12' y='14' width='3' height='26' fill='%23fff' opacity='.9'/%3E%3Crect x='19' y='14' width='3' height='26' fill='%23fff' opacity='.9'/%3E%3Ccircle cx='11' cy='11' r='4' fill='%23FBE8B0'/%3E%3Ccircle cx='18' cy='8' r='4.5' fill='%23FCEFC0'/%3E%3Ccircle cx='25' cy='11' r='4' fill='%23FBE8B0'/%3E%3C/svg%3E") 4 4, pointer;
+.showcase-play, .cf-play-center, .hero-cta {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='10' cy='9' r='4' fill='%23FCEFC0'/%3E%3Ccircle cx='16' cy='6' r='4.5' fill='%23FBE8B0'/%3E%3Ccircle cx='22' cy='9' r='4' fill='%23FCEFC0'/%3E%3Cpath d='M7 12 h18 l-2 17 a2 2 0 0 1-2 2 h-10 a2 2 0 0 1-2-2 z' fill='%238B5CF6'/%3E%3Crect x='11' y='12' width='2.5' height='19' fill='%23fff'/%3E%3Crect x='18' y='12' width='2.5' height='19' fill='%23fff'/%3E%3C/svg%3E") 16 16, pointer;
 }
