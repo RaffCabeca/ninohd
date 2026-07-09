@@ -9,7 +9,6 @@ Python 3.11+ | FastAPI | SQLite | Uvicorn
 
 import os
 import json
-import sqlite3
 import secrets
 import hashlib
 from datetime import datetime, timezone
@@ -25,7 +24,10 @@ from fastapi.middleware.cors import CORSMiddleware
 # CONFIGURAÇÃO
 # ══════════════════════════════════════════════════════════════
 
-DB_PATH = os.environ.get("NINOHD_DB", "ninohd.db")
+DATABASE_URL = os.environ.get("DATABASE_URL", "")   # Postgres (permanente) se existir
+DB_PATH = os.environ.get("NINOHD_DB", "ninohd.db")   # SQLite (local) se não houver Postgres
+USE_POSTGRES = bool(DATABASE_URL)
+
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "ninohd2026")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-3-5-sonnet-latest")
@@ -33,6 +35,18 @@ PORT = int(os.environ.get("PORT", 8000))
 
 # Token de sessão do admin (gerado a cada inicialização do servidor)
 ADMIN_TOKEN = secrets.token_urlsafe(32)
+
+# Escolhe o driver de banco
+if USE_POSTGRES:
+    import psycopg2
+    import psycopg2.extras
+    # Render às vezes dá URL começando com postgres:// (psycopg2 quer postgresql://)
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    PH = "%s"   # placeholder do Postgres
+else:
+    import sqlite3
+    PH = "?"    # placeholder do SQLite
 
 CHAT_SYSTEM = (
     "Você é o NINO, o assistente de filmes do NinoHD. Você ama cinema e conhece tudo: "
@@ -52,33 +66,56 @@ CHAT_SYSTEM = (
 
 
 # ══════════════════════════════════════════════════════════════
-# BANCO DE DADOS
+# BANCO DE DADOS (Postgres permanente OU SQLite local)
 # ══════════════════════════════════════════════════════════════
 
 def db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    if USE_POSTGRES:
+        conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+        return conn
+    else:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return conn
 
 
 def init_db():
     with closing(db()) as conn:
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS films (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                link        TEXT NOT NULL,
-                title       TEXT DEFAULT '',
-                poster      TEXT DEFAULT '',
-                year        TEXT DEFAULT '',
-                genre       TEXT DEFAULT '',
-                age         TEXT DEFAULT 'livre',
-                duration    TEXT DEFAULT '',
-                rating      TEXT DEFAULT '',
-                description TEXT DEFAULT '',
-                trending    INTEGER DEFAULT 0,
-                created_at  TEXT NOT NULL
-            )
-        """)
+        cur = conn.cursor()
+        if USE_POSTGRES:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS films (
+                    id          SERIAL PRIMARY KEY,
+                    link        TEXT NOT NULL,
+                    title       TEXT DEFAULT '',
+                    poster      TEXT DEFAULT '',
+                    year        TEXT DEFAULT '',
+                    genre       TEXT DEFAULT '',
+                    age         TEXT DEFAULT 'livre',
+                    duration    TEXT DEFAULT '',
+                    rating      TEXT DEFAULT '',
+                    description TEXT DEFAULT '',
+                    trending    INTEGER DEFAULT 0,
+                    created_at  TEXT NOT NULL
+                )
+            """)
+        else:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS films (
+                    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                    link        TEXT NOT NULL,
+                    title       TEXT DEFAULT '',
+                    poster      TEXT DEFAULT '',
+                    year        TEXT DEFAULT '',
+                    genre       TEXT DEFAULT '',
+                    age         TEXT DEFAULT 'livre',
+                    duration    TEXT DEFAULT '',
+                    rating      TEXT DEFAULT '',
+                    description TEXT DEFAULT '',
+                    trending    INTEGER DEFAULT 0,
+                    created_at  TEXT NOT NULL
+                )
+            """)
         conn.commit()
 
 
@@ -190,7 +227,9 @@ async def health():
 async def list_films():
     """Lista todos os filmes — visível para TODOS os visitantes."""
     with closing(db()) as conn:
-        rows = conn.execute("SELECT * FROM films ORDER BY id DESC").fetchall()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM films ORDER BY id DESC")
+        rows = cur.fetchall()
     return {"films": [film_to_dict(r) for r in rows]}
 
 
@@ -213,27 +252,32 @@ async def add_film(request: Request, authorization: str | None = Header(default=
         raise HTTPException(status_code=400, detail="Link vazio.")
 
     now = datetime.now(timezone.utc).isoformat()
+    vals = (
+        link,
+        body.get("title", ""),
+        body.get("poster", ""),
+        body.get("year", ""),
+        body.get("genre", ""),
+        body.get("age", "livre"),
+        body.get("duration", ""),
+        body.get("rating", ""),
+        body.get("description", ""),
+        1 if body.get("trending") else 0,
+        now,
+    )
+    cols = "(link, title, poster, year, genre, age, duration, rating, description, trending, created_at)"
+    marks = ",".join([PH] * 11)
     with closing(db()) as conn:
-        cur = conn.execute(
-            """INSERT INTO films (link, title, poster, year, genre, age, duration, rating, description, trending, created_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
-            (
-                link,
-                body.get("title", ""),
-                body.get("poster", ""),
-                body.get("year", ""),
-                body.get("genre", ""),
-                body.get("age", "livre"),
-                body.get("duration", ""),
-                body.get("rating", ""),
-                body.get("description", ""),
-                1 if body.get("trending") else 0,
-                now,
-            ),
-        )
+        cur = conn.cursor()
+        if USE_POSTGRES:
+            cur.execute(f"INSERT INTO films {cols} VALUES ({marks}) RETURNING id", vals)
+            film_id = cur.fetchone()["id"]
+        else:
+            cur.execute(f"INSERT INTO films {cols} VALUES ({marks})", vals)
+            film_id = cur.lastrowid
         conn.commit()
-        film_id = cur.lastrowid
-        row = conn.execute("SELECT * FROM films WHERE id=?", (film_id,)).fetchone()
+        cur.execute(f"SELECT * FROM films WHERE id={PH}", (film_id,))
+        row = cur.fetchone()
     return {"ok": True, "film": film_to_dict(row)}
 
 
@@ -246,16 +290,21 @@ async def add_films_bulk(request: Request, authorization: str | None = Header(de
     now = datetime.now(timezone.utc).isoformat()
     added = []
     with closing(db()) as conn:
+        cur = conn.cursor()
         for link in links:
             link = (link or "").strip()
             if not link:
                 continue
-            cur = conn.execute(
-                "INSERT INTO films (link, age, created_at) VALUES (?,?,?)",
-                (link, "livre", now),
-            )
-            row = conn.execute("SELECT * FROM films WHERE id=?", (cur.lastrowid,)).fetchone()
-            added.append(film_to_dict(row))
+            if USE_POSTGRES:
+                cur.execute(f"INSERT INTO films (link, age, created_at) VALUES ({PH},{PH},{PH}) RETURNING id",
+                            (link, "livre", now))
+                fid = cur.fetchone()["id"]
+            else:
+                cur.execute(f"INSERT INTO films (link, age, created_at) VALUES ({PH},{PH},{PH})",
+                            (link, "livre", now))
+                fid = cur.lastrowid
+            cur.execute(f"SELECT * FROM films WHERE id={PH}", (fid,))
+            added.append(film_to_dict(cur.fetchone()))
         conn.commit()
     return {"ok": True, "added": added, "count": len(added)}
 
@@ -269,18 +318,20 @@ async def edit_film(film_id: int, request: Request, authorization: str | None = 
     updates, values = [], []
     for f in fields:
         if f in body:
-            updates.append(f"{f}=?")
+            updates.append(f"{f}={PH}")
             values.append(body[f])
     if "trending" in body:
-        updates.append("trending=?")
+        updates.append(f"trending={PH}")
         values.append(1 if body["trending"] else 0)
     if not updates:
         raise HTTPException(status_code=400, detail="Nada para atualizar.")
     values.append(film_id)
     with closing(db()) as conn:
-        conn.execute(f"UPDATE films SET {', '.join(updates)} WHERE id=?", values)
+        cur = conn.cursor()
+        cur.execute(f"UPDATE films SET {', '.join(updates)} WHERE id={PH}", values)
         conn.commit()
-        row = conn.execute("SELECT * FROM films WHERE id=?", (film_id,)).fetchone()
+        cur.execute(f"SELECT * FROM films WHERE id={PH}", (film_id,))
+        row = cur.fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Filme não encontrado.")
     return {"ok": True, "film": film_to_dict(row)}
@@ -291,7 +342,8 @@ async def delete_film(film_id: int, authorization: str | None = Header(default=N
     """Remove um filme. Só admin."""
     check_admin(authorization)
     with closing(db()) as conn:
-        conn.execute("DELETE FROM films WHERE id=?", (film_id,))
+        cur = conn.cursor()
+        cur.execute(f"DELETE FROM films WHERE id={PH}", (film_id,))
         conn.commit()
     return {"ok": True}
 

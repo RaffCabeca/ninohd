@@ -5,18 +5,18 @@
    ══════════════════════════════════════════════════════════════ */
 
 :root {
-  --bg:            #3f3fa0;
-  --bg-2:          #07078a;
-  --panel:         #1f1fcc;
-  --panel-2:       #443285;
+  --bg:            #07070F;
+  --bg-2:          #0D0D1A;
+  --panel:         #12121F;
+  --panel-2:       #191926;
   --line:          rgba(255,255,255,0.07);
   --line-2:        rgba(255,255,255,0.12);
   --text:          #ECECF5;
   --text-2:        #A5A5C0;
   --text-3:        #6C6C88;
-  --violet:        #ccdd35;
-  --violet-l:      #0e9249;
-  --violet-d:      #f3f3f3;
+  --violet:        #8B5CF6;
+  --violet-l:      #A78BFA;
+  --violet-d:      #6D28D9;
   --amber:         #FBBF24;
   --amber-d:       #D99A00;
   --cyan:          #22D3EE;
@@ -713,4 +713,39 @@ img { display: block; max-width: 100%; }
 @media (max-width: 720px) {
   .coverflow { height: 320px; perspective: 1000px; }
   .cf-item { width: 150px; height: 225px; margin-left: -75px; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FUNDO ANIMADO — partículas flutuando pra cima
+   ══════════════════════════════════════════════════════════════ */
+#bg-particles {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+}
+.particle {
+  position: absolute; bottom: -20px; border-radius: 50%;
+  background: var(--violet-l);
+  opacity: 0; 
+  animation: float-up linear infinite;
+}
+@keyframes float-up {
+  0%   { transform: translateY(0) translateX(0); opacity: 0; }
+  10%  { opacity: .6; }
+  90%  { opacity: .4; }
+  100% { transform: translateY(-105vh) translateX(30px); opacity: 0; }
+}
+/* garante que o conteúdo fica acima do fundo */
+.topbar, .hero, .showcase, .coverflow-section, .section, .admin-panel,
+.footer, .filters, .stats, .ad-slot, .chat-fab, .chat-window { position: relative; z-index: 1; }
+.hero { z-index: 1; }
+
+/* ══════════════════════════════════════════════════════════════
+   CURSOR DE PIPOCA (cinema)
+   ══════════════════════════════════════════════════════════════ */
+body {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='10' cy='9' r='4' fill='%23FCEFC0'/%3E%3Ccircle cx='16' cy='6' r='4.5' fill='%23FBE8B0'/%3E%3Ccircle cx='22' cy='9' r='4' fill='%23FCEFC0'/%3E%3Cpath d='M7 12 h18 l-2 17 a2 2 0 0 1-2 2 h-10 a2 2 0 0 1-2-2 z' fill='%23E23744'/%3E%3Crect x='11' y='12' width='2.5' height='19' fill='%23fff'/%3E%3Crect x='18' y='12' width='2.5' height='19' fill='%23fff'/%3E%3C/svg%3E") 16 16, auto;
+}
+/* nos botões e links, cursor de pipoca roxa */
+a, button, .film-card, .filter-chip, .cf-item, .nav-item, .chat-fab,
+.showcase-play, .cf-play-center, .hero-cta {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='10' cy='9' r='4' fill='%23FCEFC0'/%3E%3Ccircle cx='16' cy='6' r='4.5' fill='%23FBE8B0'/%3E%3Ccircle cx='22' cy='9' r='4' fill='%23FCEFC0'/%3E%3Cpath d='M7 12 h18 l-2 17 a2 2 0 0 1-2 2 h-10 a2 2 0 0 1-2-2 z' fill='%238B5CF6'/%3E%3Crect x='11' y='12' width='2.5' height='19' fill='%23fff'/%3E%3Crect x='18' y='12' width='2.5' height='19' fill='%23fff'/%3E%3C/svg%3E") 16 16, pointer;
 }
