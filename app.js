@@ -100,6 +100,7 @@ async function loadFilms() {
   } catch (e) { S.films = []; }
   renderFilms();
   renderShowcase();
+  renderCoverflow();
 }
 
 // ─── SECURITY (leve) ──────────────────────────────────────────
@@ -256,6 +257,124 @@ function showSlide(i) {
   document.querySelectorAll('.showcase-slide').forEach(s => s.classList.toggle('active', +s.getAttribute('data-i') === i));
   document.querySelectorAll('.showcase-dot').forEach(d => d.classList.toggle('active', +d.getAttribute('data-i') === i));
 }
+
+// ═══════════════════════════════════════════════════════════════
+// BUILD — ESTEIRA CURVA 3D (coverflow)
+// ═══════════════════════════════════════════════════════════════
+function buildCoverflow() {
+  const section = el('div', { className: 'coverflow-section', id: 'coverflow-section' });
+  section.style.display = 'none';
+  const head = el('div', { className: 'coverflow-head' });
+  const title = el('div', { className: 'section-title' });
+  title.appendChild(el('span', { className: 'dot' }));
+  title.appendChild(el('span', { text: 'Em Destaque' }));
+  head.appendChild(title);
+  section.appendChild(head);
+
+  const cf = el('div', { className: 'coverflow', id: 'coverflow' });
+  cf.appendChild(el('div', { className: 'coverflow-stage', id: 'cf-stage' }));
+  section.appendChild(cf);
+
+  const nav = el('div', { className: 'coverflow-nav' });
+  const prev = el('button', { className: 'cf-btn', 'aria-label': 'Anterior', onClick: () => moveCover(-1) });
+  prev.appendChild(svgEl('<svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>'));
+  const playC = el('button', { className: 'cf-play-center', id: 'cf-play', onClick: () => { const f = cfItems[cfIndex]; if (f) openPlayer(f); } });
+  playC.appendChild(svgEl(I.play)); playC.appendChild(document.createTextNode('Assistir'));
+  const next = el('button', { className: 'cf-btn', 'aria-label': 'Próximo', onClick: () => moveCover(1) });
+  next.appendChild(svgEl('<svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>'));
+  nav.append(prev, playC, next);
+  section.appendChild(nav);
+
+  return section;
+}
+
+let cfItems = [];
+let cfIndex = 0;
+function renderCoverflow() {
+  const section = document.getElementById('coverflow-section');
+  const stage = document.getElementById('cf-stage');
+  if (!section || !stage) return;
+
+  // usa filmes com capa; se poucos, usa todos
+  cfItems = S.films.filter(f => f.poster);
+  if (cfItems.length < 3) cfItems = S.films.slice();
+  cfItems = cfItems.slice(0, 12);
+
+  if (!cfItems.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  stage.innerHTML = '';
+  cfIndex = Math.floor(cfItems.length / 2);
+
+  cfItems.forEach((f, i) => {
+    const item = el('div', { className: 'cf-item', 'data-i': i, onClick: () => {
+      if (i === cfIndex) openPlayer(f); else goCover(i);
+    }});
+    if (f.poster) {
+      item.appendChild(el('img', { src: f.poster, alt: f.title || '', loading: 'lazy',
+        onerror: function(){ this.replaceWith(mkCfEmpty(f)); } }));
+    } else {
+      item.appendChild(mkCfEmpty(f));
+    }
+    const cap = el('div', { className: 'cf-caption' });
+    cap.appendChild(el('h4', { text: f.title || 'Filme' }));
+    if (f.year || f.genre) cap.appendChild(el('span', { text: [f.year, f.genre].filter(Boolean).join(' · ') }));
+    item.appendChild(cap);
+    stage.appendChild(item);
+  });
+
+  layoutCover();
+  attachCoverDrag();
+}
+function mkCfEmpty(f) {
+  return el('div', { className: 'cf-item-empty', text: f.title || 'Sem capa' });
+}
+
+function layoutCover() {
+  const items = document.querySelectorAll('.cf-item');
+  const spacing = window.innerWidth <= 720 ? 130 : 180;   // distância entre cards
+  items.forEach((item, i) => {
+    const offset = i - cfIndex;
+    const abs = Math.abs(offset);
+    // esteira curva: cada card rotaciona e afunda conforme se afasta do centro
+    const rotate = offset * -22;                       // inclinação (curva)
+    const translateX = offset * spacing;               // desloca lateral
+    const translateZ = -abs * 120;                     // afunda pra trás (profundidade)
+    const opacity = abs > 4 ? 0 : 1 - abs * 0.12;      // some nas pontas
+    const scale = 1 - abs * 0.05;
+    item.style.transform =
+      `translateX(${translateX}px) translateZ(${translateZ}px) rotateY(${rotate}deg) scale(${scale})`;
+    item.style.opacity = opacity;
+    item.style.zIndex = 100 - abs;
+    item.classList.toggle('center', offset === 0);
+    item.style.pointerEvents = abs > 4 ? 'none' : 'auto';
+  });
+}
+function goCover(i) {
+  cfIndex = Math.max(0, Math.min(i, cfItems.length - 1));
+  layoutCover();
+}
+function moveCover(dir) {
+  goCover(cfIndex + dir);
+}
+// arrastar com o dedo / mouse
+let cfDragStart = null;
+function attachCoverDrag() {
+  const cf = document.getElementById('coverflow');
+  if (!cf || cf._dragBound) return;
+  cf._dragBound = true;
+  const start = (x) => { cfDragStart = x; };
+  const end = (x) => {
+    if (cfDragStart === null) return;
+    const diff = x - cfDragStart;
+    if (Math.abs(diff) > 40) moveCover(diff > 0 ? -1 : 1);
+    cfDragStart = null;
+  };
+  cf.addEventListener('touchstart', e => start(e.touches[0].clientX), { passive: true });
+  cf.addEventListener('touchend', e => end(e.changedTouches[0].clientX), { passive: true });
+  cf.addEventListener('mousedown', e => start(e.clientX));
+  cf.addEventListener('mouseup', e => end(e.clientX));
+}
+window.addEventListener('resize', () => { if (cfItems.length) layoutCover(); });
 
 // ═══════════════════════════════════════════════════════════════
 // BUILD — STATS
@@ -927,6 +1046,7 @@ document.addEventListener('DOMContentLoaded', () => {
   root.appendChild(buildTopbar());
   root.appendChild(buildHero());
   root.appendChild(buildShowcase());
+  root.appendChild(buildCoverflow());
   root.appendChild(buildAdSlot(ADS.topo, 'topo'));      // anúncio TOPO
   root.appendChild(buildStats());
   root.appendChild(buildFilters());
