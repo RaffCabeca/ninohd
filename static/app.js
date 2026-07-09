@@ -1039,9 +1039,34 @@ function buildAdSlot(cfg, id) {
 
 // INIT
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// FUNDO — partículas flutuando pra cima
+// ═══════════════════════════════════════════════════════════════
+function createParticles() {
+  const container = el('div', { id: 'bg-particles' });
+  const count = window.innerWidth < 720 ? 22 : 45;
+  for (let i = 0; i < count; i++) {
+    const p = el('div', { className: 'particle' });
+    const size = Math.random() * 4 + 2;           // 2 a 6 px
+    p.style.width = p.style.height = size + 'px';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (Math.random() * 12 + 10) + 's';  // 10 a 22s
+    p.style.animationDelay = (Math.random() * 15) + 's';
+    // cor alterna entre violeta e âmbar
+    if (i % 3 === 0) p.style.background = 'var(--amber)';
+    else if (i % 3 === 1) p.style.background = 'var(--violet-l)';
+    else p.style.background = 'var(--cyan)';
+    container.appendChild(p);
+  }
+  document.body.insertBefore(container, document.body.firstChild);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const root = document.getElementById('ninohd-root');
   document.documentElement.setAttribute('data-theme', S.theme);
+
+  // fundo de partículas flutuando
+  createParticles();
 
   root.appendChild(buildTopbar());
   root.appendChild(buildHero());
